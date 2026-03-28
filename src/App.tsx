@@ -26,22 +26,26 @@ function App() {
           </HeaderName>
         </Header>
 
-        <Content style={{ paddingTop: 'var(--cds-spacing-10)' }}>
-          <Grid>
-            {/* Header Text Section */}
-            <Column lg={16} md={8} sm={4} style={{ marginBottom: 'var(--cds-spacing-08)' }}>
-              <Stack gap={4}>
-                <h1 style={{ 
-                  fontSize: 'var(--cds-productive-heading-06)', 
-                  fontWeight: 'var(--cds-font-weight-bold)',
+        <Content style={{ paddingTop: 'var(--cds-spacing-08)' }}>
+          <Grid narrow>
+            <Column
+              lg={16}
+              md={8}
+              sm={4}
+              style={{ marginBottom: 'var(--cds-spacing-07)', textAlign: 'left' }}
+            >
+              <Stack gap={3}>
+                <h1 style={{
+                  fontSize: 'var(--cds-productive-heading-05)',
+                  fontWeight: 'var(--cds-font-weight-semibold)',
                   color: 'var(--cds-text-primary)'
                 }}>
                   Motion to Music
                 </h1>
-                <p style={{ 
-                  fontSize: 'var(--cds-body-short-02)', 
+                <p style={{
+                  fontSize: 'var(--cds-body-long-02)',
                   color: 'var(--cds-text-secondary)',
-                  maxWidth: '600px'
+                  maxWidth: '52ch'
                 }}>
                   당신의 고개 끄덕임과 주변 환경이 만나 실시간 음악이 탄생합니다.
                   AI가 분석하는 당신만의 비트를 경험해보세요.
@@ -49,12 +53,10 @@ function App() {
               </Stack>
             </Column>
 
-            {/* Camera Section */}
             <Column lg={12} md={8} sm={4} style={{ marginBottom: 'var(--cds-spacing-08)' }}>
               <Camera />
             </Column>
 
-            {/* Analysis Dashboard Section */}
             <Column lg={4} md={8} sm={4}>
               <Stack gap={6}>
                 <Tile>
