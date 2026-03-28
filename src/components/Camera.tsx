@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loading, Tag } from "@carbon/react";
-import { Video, Music } from "@carbon/icons-react";
+import { Video, Music, Area } from "@carbon/icons-react";
 import { useNodDetection } from "../hooks/useNodDetection";
+import {
+  analyzeSpatialPlace,
+  spatialPlaceLabelKo,
+  type SpatialAnalysis,
+} from "../services/spatialVision";
 import {
   DrawingUtils,
   FaceLandmarker,
@@ -10,7 +15,16 @@ import {
 } from "@mediapipe/tasks-vision";
 import type { NormalizedLandmark } from "@mediapipe/tasks-vision";
 
-const Camera = () => {
+type CameraProps = {
+  onSpatialUpdate?: (analysis: SpatialAnalysis | null) => void;
+  onThumbsUp?: (ctx: {
+    bpm: number;
+    valence: number | null;
+    spatial: SpatialAnalysis | null;
+  }) => void;
+};
+
+const Camera = ({ onSpatialUpdate, onThumbsUp }: CameraProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,12 +42,23 @@ const Camera = () => {
     valence: number | null;
   } | null>(null);
 
+  const [spatial, setSpatial] = useState<SpatialAnalysis | null>(null);
+  const [spatialStatus, setSpatialStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const lastSpatialForCaptureAtRef = useRef<number>(0);
+  const lastThumbsUpAtRef = useRef<number>(0);
+
   const valenceLabel = useMemo(() => {
     if (valence == null) return null;
     if (valence >= 0.65) return { label: "Positive", type: "green" as const };
     if (valence <= 0.35) return { label: "Negative", type: "red" as const };
     return { label: "Neutral", type: "cool-gray" as const };
   }, [valence]);
+
+  const isFaceReady = useMemo(() => {
+    return !!(landmarks && landmarks.length > 0);
+  }, [landmarks]);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -151,6 +176,29 @@ const Camera = () => {
       );
     };
 
+    const isThumbsUp = (lm: NormalizedLandmark[]) => {
+      const indexFolded = isFingerFolded(lm, 5, 6, 8);
+      const middleFolded = isFingerFolded(lm, 9, 10, 12);
+      const ringFolded = isFingerFolded(lm, 13, 14, 16);
+      const pinkyFolded = isFingerFolded(lm, 17, 18, 20);
+
+      const thumbExtended = angleDeg(lm[2], lm[3], lm[4]) > 160;
+      const thumbUp = lm[4].y < lm[2].y - 0.04;
+      const thumbFar =
+        Math.hypot(lm[4].x - lm[0].x, lm[4].y - lm[0].y) >
+        Math.hypot(lm[2].x - lm[0].x, lm[2].y - lm[0].y) + 0.02;
+
+      return (
+        indexFolded &&
+        middleFolded &&
+        ringFolded &&
+        pinkyFolded &&
+        thumbExtended &&
+        thumbUp &&
+        thumbFar
+      );
+    };
+
     const captureFrame = () => {
       const video = videoRef.current;
       if (!video) return null;
@@ -171,17 +219,25 @@ const Camera = () => {
         const now = performance.now();
         const results = handLandmarker.detectForVideo(video, now);
         const lm = results.landmarks?.[0];
-        if (lm && isVSign(lm)) {
-          const last = lastCaptureAtRef.current;
-          if (now - last > 1500) {
-            const imageDataUrl = captureFrame();
-            if (imageDataUrl) {
-              lastCaptureAtRef.current = now;
-              setLastCapture({
-                imageDataUrl,
-                capturedAt: Date.now(),
-                valence,
-              });
+        if (lm) {
+          if (isVSign(lm)) {
+            const last = lastCaptureAtRef.current;
+            if (now - last > 1500) {
+              const imageDataUrl = captureFrame();
+              if (imageDataUrl) {
+                lastCaptureAtRef.current = now;
+                setLastCapture({
+                  imageDataUrl,
+                  capturedAt: Date.now(),
+                  valence,
+                });
+              }
+            }
+          } else if (isThumbsUp(lm)) {
+            const last = lastThumbsUpAtRef.current;
+            if (now - last > 2500) {
+              lastThumbsUpAtRef.current = now;
+              onThumbsUp?.({ bpm, valence, spatial });
             }
           }
         }
@@ -192,7 +248,7 @@ const Camera = () => {
     detect();
 
     return () => cancelAnimationFrame(animationId);
-  }, [handLandmarker, valence]);
+  }, [handLandmarker, valence, bpm, spatial, onThumbsUp]);
 
   useEffect(() => {
     if (!canvasRef.current || !videoRef.current) return;
@@ -272,6 +328,33 @@ const Camera = () => {
     }
   }, [landmarks, isNodding]);
 
+  useEffect(() => {
+    if (!lastCapture) return;
+    if (lastSpatialForCaptureAtRef.current === lastCapture.capturedAt) return;
+
+    lastSpatialForCaptureAtRef.current = lastCapture.capturedAt;
+    setSpatialStatus("loading");
+
+    let cancelled = false;
+    analyzeSpatialPlace({ imageDataUrl: lastCapture.imageDataUrl })
+      .then((analysis) => {
+        if (cancelled) return;
+        setSpatial(analysis);
+        setSpatialStatus("ready");
+        onSpatialUpdate?.(analysis);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSpatial(null);
+        setSpatialStatus("error");
+        onSpatialUpdate?.(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [lastCapture, onSpatialUpdate]);
+
   return (
     <div
       className="camera-container"
@@ -302,6 +385,26 @@ const Camera = () => {
         >
           {!isActive && (
             <Loading withOverlay={false} description="카메라 로딩 중" />
+          )}
+
+          {isActive && !isFaceReady && (
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                zIndex: 2,
+                padding: "var(--cds-spacing-04)",
+                border: "1px solid var(--cds-border-subtle)",
+                backgroundColor: "rgba(0,0,0,0.55)",
+                color: "white",
+                backdropFilter: "blur(6px)",
+                fontSize: "var(--cds-body-short-01)",
+              }}
+            >
+              얼굴 인식 로딩 중…
+            </div>
           )}
 
           <video
@@ -375,6 +478,53 @@ const Camera = () => {
                     {Math.round(((valence ?? 0) as number) * 100)}%
                   </Tag>
                 )}
+
+                {spatialStatus === "loading" && (
+                  <div
+                    style={{
+                      fontSize: "var(--cds-label-01)",
+                      color: "white",
+                      backgroundColor: "rgba(0,0,0,0.45)",
+                      padding: "2px 6px",
+                      borderRadius: "2px",
+                      maxWidth: "280px",
+                    }}
+                  >
+                    공간 분석 중…
+                  </div>
+                )}
+
+                {spatialStatus === "ready" && spatial && (
+                  <div
+                    style={{
+                      fontSize: "var(--cds-label-01)",
+                      color: "white",
+                      backgroundColor: "rgba(0,0,0,0.45)",
+                      padding: "2px 6px",
+                      borderRadius: "2px",
+                      maxWidth: "280px",
+                      textAlign: "right",
+                    }}
+                  >
+                    공간: {spatialPlaceLabelKo(spatial.place)}{" "}
+                    {Math.round(spatial.confidence * 100)}%
+                  </div>
+                )}
+
+                {spatialStatus === "error" && (
+                  <div
+                    style={{
+                      fontSize: "var(--cds-label-01)",
+                      color: "white",
+                      backgroundColor: "rgba(0,0,0,0.45)",
+                      padding: "2px 6px",
+                      borderRadius: "2px",
+                      maxWidth: "280px",
+                    }}
+                  >
+                    공간 분석 실패
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -396,6 +546,63 @@ const Camera = () => {
                 alt="capture"
                 style={{ width: "100%", display: "block" }}
               />
+            </div>
+          )}
+
+          {spatialStatus === "ready" && spatial?.reason && (
+            <div
+              style={{
+                position: "absolute",
+                bottom: "var(--cds-spacing-05, 1rem)",
+                left: "var(--cds-spacing-05, 1rem)",
+                zIndex: 2,
+                maxWidth: "min(420px, 70%)",
+                padding: "var(--cds-spacing-04)",
+                border: "1px solid var(--cds-border-subtle)",
+                backgroundColor: "rgba(0,0,0,0.55)",
+                color: "white",
+                backdropFilter: "blur(6px)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--cds-spacing-03)",
+                  marginBottom: "var(--cds-spacing-02)",
+                  fontWeight: "var(--cds-font-weight-semibold)",
+                }}
+              >
+                <Area size={16} />
+                {spatialPlaceLabelKo(spatial.place)}
+              </div>
+              <div style={{ fontSize: "var(--cds-label-01)", opacity: 0.9 }}>
+                {spatial.reason}
+              </div>
+              {!!spatial.tags?.length && (
+                <div
+                  style={{
+                    marginTop: "var(--cds-spacing-03)",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "var(--cds-spacing-02)",
+                  }}
+                >
+                  {spatial.tags.map((t) => (
+                    <span
+                      key={t}
+                      style={{
+                        fontSize: "var(--cds-label-01)",
+                        padding: "2px 6px",
+                        border: "1px solid rgba(255,255,255,0.35)",
+                        borderRadius: "999px",
+                      }}
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

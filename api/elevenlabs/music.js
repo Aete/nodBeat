@@ -33,44 +33,27 @@ export default async function handler(req, res) {
     return;
   }
 
-  const {
-    text,
-    voiceId,
-    modelId,
-    stability,
-    similarityBoost,
-    outputFormat,
-  } = req.body ?? {};
+  const { prompt, outputFormat, musicLengthMs } = req.body ?? {};
 
-  if (!text || typeof text !== "string") {
-    json(res, 400, { error: "Missing text" });
+  if (!prompt || typeof prompt !== "string") {
+    json(res, 400, { error: "Missing prompt" });
     return;
   }
-
-  const selectedVoiceId =
-    typeof voiceId === "string" && voiceId.trim().length > 0
-      ? voiceId.trim()
-      : process.env.ELEVENLABS_VOICE_ID || process.env.VITE_ELEVENLABS_VOICE_ID;
-
-  if (!selectedVoiceId) {
-    json(res, 400, { error: "Missing voiceId (or ELEVENLABS_VOICE_ID)" });
-    return;
-  }
-
-  const selectedModelId =
-    typeof modelId === "string" && modelId.trim().length > 0
-      ? modelId.trim()
-      : process.env.ELEVENLABS_MODEL_ID;
 
   const selectedOutputFormat =
     typeof outputFormat === "string" && outputFormat.trim().length > 0
       ? outputFormat.trim()
       : process.env.ELEVENLABS_OUTPUT_FORMAT || "mp3_44100_128";
 
+  const selectedMusicLengthMs =
+    typeof musicLengthMs === "number" && Number.isFinite(musicLengthMs)
+      ? Math.max(5000, Math.min(60000, Math.round(musicLengthMs)))
+      : 60000;
+
   try {
-    const url = `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(
-      selectedVoiceId,
-    )}?output_format=${encodeURIComponent(selectedOutputFormat)}`;
+    const url = `https://api.elevenlabs.io/v1/music?output_format=${encodeURIComponent(
+      selectedOutputFormat,
+    )}`;
 
     const response = await fetch(url, {
       method: "POST",
@@ -79,20 +62,15 @@ export default async function handler(req, res) {
         "xi-api-key": apiKey,
       },
       body: JSON.stringify({
-        text,
-        model_id: selectedModelId,
-        voice_settings: {
-          stability: typeof stability === "number" ? stability : 0.5,
-          similarity_boost:
-            typeof similarityBoost === "number" ? similarityBoost : 0.75,
-        },
+        prompt: prompt.trim(),
+        music_length_ms: selectedMusicLengthMs,
       }),
     });
 
     if (!response.ok) {
       const errText = await response.text().catch(() => "");
       json(res, response.status, {
-        error: "ElevenLabs request failed",
+        error: "ElevenLabs music request failed",
         details: errText,
       });
       return;
