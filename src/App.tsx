@@ -159,7 +159,11 @@ function App() {
             </Column>
 
             <Column lg={12} md={8} sm={4} style={{ marginBottom: 'var(--cds-spacing-08)' }}>
-              <Camera onSpatialUpdate={setSpatial} onThumbsUp={handleThumbsUp} />
+              <Camera
+                onSpatialUpdate={setSpatial}
+                onThumbsUp={handleThumbsUp}
+                thumbsUpEnabled={musicStatus !== 'ready'}
+              />
             </Column>
 
             <Column lg={4} md={8} sm={4}>
@@ -239,6 +243,7 @@ function App() {
                         </div>
                       </div>
                     )}
+
                   </Stack>
                 </Tile>
               </Stack>

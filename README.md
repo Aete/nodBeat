@@ -1,73 +1,51 @@
-# React + TypeScript + Vite
+# nodBeat
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+nodBeat는 사용자의 모션과 배경 공간을 실시간으로 분석해 “제스처 기반”으로 음악을 만들어주는 프로젝트입니다.
 
-Currently, two official plugins are available:
+## What it does
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- 고개 끄덕임: BPM 추정
+- 표정: 감정(valence) 추정
+- 손 브이(V): 현재 프레임을 캡쳐해 OpenAI Vision으로 배경 공간(오피스/산/강 등) 분류
+- 엄지척(👍): BPM/감정/공간 정보를 정리해 영문 음악 프롬프트를 만든 뒤 ElevenLabs Music API로 음악 생성
 
-## React Compiler
+## Tech
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Frontend: React + TypeScript + Vite
+- UI: IBM Carbon (`@carbon/react`)
+- Perception: MediaPipe
+- Spatial recognition: OpenAI Vision (`/api/openai/vision`)
+- Music generation: ElevenLabs Music (`/api/elevenlabs/music`)
 
-## Expanding the ESLint configuration
+## Environment variables
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+로컬 개발에서는 `VITE_` 프리픽스 키로도 동작하도록 폴백을 넣어두었지만, 배포 환경에서는 반드시 서버 전용 키를 사용하세요.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- OpenAI
+  - `OPENAI_API_KEY` (권장, 서버)
+  - `VITE_OPENAI_API_KEY` (로컬 폴백)
+- ElevenLabs
+  - `ELEVENLABS_API_KEY` (권장, 서버)
+  - `VITE_ELEVENLABS_API_KEY` 또는 `VITE_ELEVEN_LABS_API` (로컬 폴백)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Run locally
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+브라우저에서 카메라 권한을 허용한 뒤,
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- 브이(V): 배경 공간 분석
+- 엄지척(👍): 음악 생성
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+을 실행할 수 있습니다.
+
+## Deploy
+
+Vercel을 사용하는 경우, Project 환경변수에 아래 값을 설정해야 `/api/*` 기능이 정상 동작합니다.
+
+- `OPENAI_API_KEY`
+- `ELEVENLABS_API_KEY`
+

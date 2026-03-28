@@ -22,9 +22,14 @@ type CameraProps = {
     valence: number | null;
     spatial: SpatialAnalysis | null;
   }) => void;
+  thumbsUpEnabled?: boolean;
 };
 
-const Camera = ({ onSpatialUpdate, onThumbsUp }: CameraProps) => {
+const Camera = ({
+  onSpatialUpdate,
+  onThumbsUp,
+  thumbsUpEnabled,
+}: CameraProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -237,7 +242,8 @@ const Camera = ({ onSpatialUpdate, onThumbsUp }: CameraProps) => {
             const last = lastThumbsUpAtRef.current;
             if (now - last > 2500) {
               lastThumbsUpAtRef.current = now;
-              onThumbsUp?.({ bpm, valence, spatial });
+              if (thumbsUpEnabled !== false)
+                onThumbsUp?.({ bpm, valence, spatial });
             }
           }
         }
@@ -248,7 +254,7 @@ const Camera = ({ onSpatialUpdate, onThumbsUp }: CameraProps) => {
     detect();
 
     return () => cancelAnimationFrame(animationId);
-  }, [handLandmarker, valence, bpm, spatial, onThumbsUp]);
+  }, [handLandmarker, valence, bpm, spatial, onThumbsUp, thumbsUpEnabled]);
 
   useEffect(() => {
     if (!canvasRef.current || !videoRef.current) return;
