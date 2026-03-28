@@ -1,121 +1,69 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import Camera from './components/Camera';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
+    <div className="min-h-screen bg-black text-white selection:bg-indigo-500/30">
+      {/* Background decoration */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-20">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600 rounded-full blur-[120px]" />
+      </div>
+
+      <main className="relative z-10 container mx-auto px-4 py-12 flex flex-col items-center gap-12">
+        <header className="text-center space-y-4 max-w-2xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/20 mb-4">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-300">Project nodBeat</span>
+          </div>
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white via-white/80 to-white/50">
+            Motion to Music
+          </h1>
+          <p className="text-gray-400 text-lg md:text-xl font-medium leading-relaxed">
+            당신의 고개 끄덕임과 주변 환경이 만나 실시간 음악이 탄생합니다.
+            <br className="hidden md:block" />
+            AI가 분석하는 당신만의 비트를 경험해보세요.
           </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+        </header>
 
-      <div className="ticks"></div>
+        <section className="w-full flex flex-col items-center gap-8">
+          <Camera />
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-4xl">
+            <div className="p-6 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-indigo-500/30 transition-colors group">
+              <div className="text-indigo-400 font-bold mb-2 flex items-center gap-2">
+                <span className="w-8 h-8 flex items-center justify-center bg-indigo-500/10 rounded-lg group-hover:scale-110 transition-transform">🥁</span>
+                BPM Analysis
+              </div>
+              <p className="text-gray-500 text-sm">고개를 끄덕여 비트를 조절하세요.</p>
+            </div>
+            
+            <div className="p-6 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-purple-500/30 transition-colors group">
+              <div className="text-purple-400 font-bold mb-2 flex items-center gap-2">
+                <span className="w-8 h-8 flex items-center justify-center bg-purple-500/10 rounded-lg group-hover:scale-110 transition-transform">🌆</span>
+                Spatial Vibe
+              </div>
+              <p className="text-gray-500 text-sm">공간에 어울리는 악기를 선정합니다.</p>
+            </div>
+            
+            <div className="p-6 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-pink-500/30 transition-colors group">
+              <div className="text-pink-400 font-bold mb-2 flex items-center gap-2">
+                <span className="w-8 h-8 flex items-center justify-center bg-pink-500/10 rounded-lg group-hover:scale-110 transition-transform">🧠</span>
+                AI Composer
+              </div>
+              <p className="text-gray-500 text-sm">나이와 분위기에 맞는 비트를 생성합니다.</p>
+            </div>
+          </div>
+        </section>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        <footer className="mt-auto pt-12 text-gray-600 text-sm">
+          © 2026 nodBeat - AI Generative Music Project
+        </footer>
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;
