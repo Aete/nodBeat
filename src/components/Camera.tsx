@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
+import { Loading, Tag } from "@carbon/react";
+import { Video } from "@carbon/icons-react";
 
 const Camera = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -14,9 +16,9 @@ const Camera = () => {
           video: {
             width: { ideal: 1280 },
             height: { ideal: 720 },
-            facingMode: 'user'
+            facingMode: "user",
           },
-          audio: false
+          audio: false,
         });
 
         if (videoRef.current) {
@@ -24,8 +26,8 @@ const Camera = () => {
           setIsActive(true);
         }
       } catch (err) {
-        console.error('Error accessing camera:', err);
-        setError('카메라에 접근할 수 없습니다. 권한을 확인해주세요.');
+        console.error("Error accessing camera:", err);
+        setError("카메라에 접근할 수 없습니다. 권한을 확인해주세요.");
       }
     };
 
@@ -33,35 +35,68 @@ const Camera = () => {
 
     return () => {
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
     };
   }, []);
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto overflow-hidden rounded-xl bg-gray-900 shadow-2xl border-4 border-indigo-500/30">
+    <div
+      className="camera-container"
+      style={{
+        position: "relative",
+        width: "100%",
+        maxWidth: "1280px",
+        margin: "0 auto",
+        backgroundColor: "var(--cds-layer-01)",
+        border: "1px solid var(--cds-border-subtle)",
+        borderRadius: "4px",
+        overflow: "hidden",
+      }}
+    >
       {error ? (
-        <div className="flex items-center justify-center h-64 text-red-400 p-4 text-center">
-          <p>{error}</p>
+        <div style={{ padding: "var(--cds-spacing-09)", textAlign: "center" }}>
+          <p style={{ color: "var(--cds-support-error)" }}>{error}</p>
         </div>
       ) : (
-        <div className="relative aspect-video">
+        <div
+          style={{
+            position: "relative",
+            aspectRatio: "16/9",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
           {!isActive && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-800 animate-pulse">
-              <span className="text-gray-400">카메라를 불러오는 중...</span>
-            </div>
+            <Loading withOverlay={false} description="카메라 로딩 중" />
           )}
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted
-            className={`w-full h-full object-cover transform scale-x-[-1] ${isActive ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500`}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              transform: "scaleX(-1)",
+              opacity: isActive ? 1 : 0,
+              transition: "opacity 0.5s ease",
+            }}
           />
           {isActive && (
-            <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1 bg-black/50 backdrop-blur-md rounded-full border border-white/20">
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              <span className="text-xs font-medium text-white uppercase tracking-wider">Live</span>
+            <div
+              style={{
+                position: "absolute",
+                top: "var(--cds-spacing-05)",
+                right: "var(--cds-spacing-05)",
+                zIndex: 1,
+              }}
+            >
+              <Tag type="red" renderIcon={Video}>
+                Live
+              </Tag>
             </div>
           )}
         </div>
